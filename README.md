@@ -1,5 +1,9 @@
 # nemotron-voice-typing
 
+<p align="center">
+  <img src="assets/icon.png" alt="Nemotron 語音輸入 icon" width="128">
+</p>
+
 > 地端「Vibe Coding」語音輸入一鍵安裝套件：**Whisper（語音轉文字）+ Nemotron（本機 LLM）+ VS Code Continue**。
 > 全程不上雲、低延遲，按住熱鍵說話、放開即把程式碼需求打進編輯器。
 > 專為 **Windows 11 + NVIDIA GPU** 設計（在 RTX 5090 / 32GB 實測）。
