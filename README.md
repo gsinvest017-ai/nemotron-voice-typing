@@ -86,14 +86,15 @@ ctranslate2 在 Windows **不會**自動搜尋 pip 裝的 `site-packages\nvidia\
 
 ---
 
-## 效能（RTX 5090，5 秒音檔，warmup 後）
+## 效能（RTX 5090，large-v3）
 
-| 模型 | 裝置 | 一句轉錄 |
+| 情境 | 裝置 | 一句延遲 |
 |---|---|---|
-| large-v3 | **CUDA（修好坑4）** | **~236 ms** |
-| large-v3 | CPU（坑4 fallback） | ~6000 ms |
+| 純運算 benchmark（5 秒音檔，warmup 後） | **CUDA（修好坑4）** | **~236 ms** |
+| 實際語音輸入端到端（含錄音/VAD/打字） | **CUDA** | **~1 秒，很順** |
+| 坑4 未修（靜默用 CPU） | CPU | ~6 秒 |
 
-第一句會多 1～2 秒（CUDA kernel warmup），第二句起才是滿速。
+第一句會多 1～2 秒（CUDA kernel warmup），第二句起就是上面的滿速體驗。
 
 ---
 
