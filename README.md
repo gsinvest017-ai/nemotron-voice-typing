@@ -33,13 +33,17 @@
 > repo 為 private，自動更新需 `gh auth login` 或設定 `NVT_GH_TOKEN`。
 
 ### 自己打包桌面 App
-用通用打包器 [gs-app-pack](https://github.com/gsinvest017-ai)（PyInstaller + Inno Setup）：
+底層用通用打包器 [gs-app-pack](https://github.com/gsinvest017-ai)（PyInstaller + Inno Setup），
+但**請用本 repo 的 `build-app.ps1`**（不要直接 `pack.ps1`）——它會先以 `make_voice_icon.py`
+產生麥克風 icon 再打包，避免被 gs-app-pack 的通用金環 `make_icon.py` 蓋掉而跟其他 GS app 撞圖：
 ```powershell
-pip install pyinstaller pywebview        # 一次性
-C:\Users\User\gs-app-pack\pack.ps1 -Clean              # 建 exe + 安裝檔
-C:\Users\User\gs-app-pack\pack.ps1 -Tag v1.0.1 -Clean  # + 發 GitHub Release
+pip install pyinstaller pywebview pillow   # 一次性
+pwsh -File build-app.ps1                    # 建 exe + 安裝檔
+pwsh -File build-app.ps1 -Tag v1.0.2       # + 發 GitHub Release（先 git push main）
 ```
-控制器原始碼在 `app.py` + `vtcontrol/`（`manager` 管子程序、`server` stdlib 控制 API、`updater` 自我更新）、UI 在 `static/control.html`、打包設定在 `pack.config.ps1`。
+發版前記得同步 `vtcontrol/__init__.py` 的 `APP_VERSION` 與 `pack.config.ps1` 的 `$AppVersion`。
+控制器原始碼在 `app.py` + `vtcontrol/`（`manager` 管子程序、`server` stdlib 控制 API、`updater` 自我更新）、
+UI 在 `static/control.html`、icon 產生器 `make_voice_icon.py`、打包設定 `pack.config.ps1`。
 
 ---
 
