@@ -10,4 +10,4 @@
 """
 
 # 自動更新比對版號用；release 前需與 pack.config.ps1 的 $AppVersion 同步。
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
