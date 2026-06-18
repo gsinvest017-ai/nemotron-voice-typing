@@ -127,6 +127,26 @@ Set-Content $utils $c -Encoding utf8 -NoNewline
 Ok "utils.py 已 patch UTF-8"
 
 # ---------------------------------------------------------------------------
+Step "5b. 修坑5：讓終端機 Ctrl+C 能關掉 PyQt GUI（裝 SIGINT handler + QTimer）"
+$main = "$InstallDir\src\main.py"
+$m = Get-Content $main -Raw -Encoding utf8
+if ($m -notmatch 'SIGINT') {
+    $m = $m -replace "(?m)^import os\r?\nimport sys", "import os`r`nimport signal`r`nimport sys"
+    $m = $m -replace 'from PyQt5\.QtCore import QObject, QProcess', 'from PyQt5.QtCore import QObject, QProcess, QTimer'
+    $anchor = 'self.app.setWindowIcon(QIcon(os.path.join("assets", "ww-logo.png")))'
+    $inject = $anchor + "`r`n            # Qt 事件迴圈會吃掉 SIGINT，no-op QTimer 定時把控制權還給直譯器，讓 Ctrl+C 能關閉" +
+              "`r`n            signal.signal(signal.SIGINT, lambda *_: self.app.quit())" +
+              "`r`n            self._sigint_timer = QTimer()" +
+              "`r`n            self._sigint_timer.start(250)" +
+              "`r`n            self._sigint_timer.timeout.connect(lambda: None)"
+    $m = $m -replace [regex]::Escape($anchor), $inject
+    Set-Content $main $m -Encoding utf8 -NoNewline
+    Ok "main.py 已 patch Ctrl+C"
+} else {
+    Ok "main.py 已含 SIGINT handler，略過"
+}
+
+# ---------------------------------------------------------------------------
 Step "6. 寫入 whisper-writer 設定 (src/config.yaml)"
 $cfg = @"
 # 由 nemotron-voice-typing/install.ps1 產生
