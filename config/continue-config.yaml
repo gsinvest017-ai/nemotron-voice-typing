@@ -1,0 +1,25 @@
+name: Local Assistant
+version: 1.0.0
+schema: v1
+
+models:
+  # 主力對話 / 編輯模型：本機 Nemotron（reasoning + coding）
+  - name: Nemotron Local
+    provider: ollama
+    model: nemotron-3-nano:30b
+    defaultCompletionOptions:
+      contextLength: 32768
+    roles:
+      - chat
+      - edit
+      - apply
+
+  # Tab 自動補全：reasoning 模型不適合（會吐思考過程又慢），改用支援 FIM 的 coder 模型
+  - name: Qwen3 Coder Autocomplete
+    provider: ollama
+    model: qwen3-coder:30b
+    roles:
+      - autocomplete
+
+rules:
+  - 你是高效率的 Pair Programmer。我用中文或英文「語音輸入」下指令，可能有口語贅字與辨識誤差，請推測真正意圖。直接輸出程式碼，附必要註解即可，不要客套或長篇解釋。

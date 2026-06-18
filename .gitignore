@@ -1,0 +1,8 @@
+# 本 repo 只放安裝腳本與設定，不含被安裝的 whisper-writer 本體 / venv / 模型
+.venv/
+__pycache__/
+*.pyc
+whisper-writer/
+models/
+*.bin
+*.log

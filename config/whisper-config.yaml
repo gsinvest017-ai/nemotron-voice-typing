@@ -1,0 +1,25 @@
+# whisper-writer 設定範本（會被複製到 <安裝目錄>\src\config.yaml）
+# install.ps1 會依 GPU 偵測結果改寫 model / device / compute_type / activation_key。
+# 只列出要覆蓋預設值的欄位即可（程式會 deep-merge 進 config_schema.yaml 的預設）。
+model_options:
+  use_api: false                 # 純地端，不走 OpenAI API
+  common:
+    language: null               # null = 自動偵測語言（中英混說可用）
+    initial_prompt: "以下是程式設計相關的口語指令，可能中英夾雜。"
+  local:
+    model: large-v3              # 有 GPU 用 large-v3；CPU 建議 small / medium
+    device: cuda                 # cuda / cpu / auto
+    compute_type: float16        # GPU=float16；CPU 請改 int8
+    vad_filter: true             # 過濾靜音，加快轉錄
+
+recording_options:
+  activation_key: ctrl+shift+space
+  recording_mode: hold_to_record # 按住說話、放開即轉錄並打字
+  silence_duration: 900
+
+post_processing:
+  add_trailing_space: true
+
+misc:
+  print_to_terminal: true        # 終端機印出狀態與「Transcription completed in X s」
+  noise_on_completion: true      # 打完字嗶一聲
