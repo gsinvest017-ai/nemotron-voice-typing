@@ -1,4 +1,4 @@
-# 本 repo 只放安裝腳本與設定，不含被安裝的 whisper-writer 本體 / venv / 模型
+# 本 repo 放安裝腳本、桌面控制器原始碼與設定；不含被安裝的 whisper-writer 本體 / venv / 模型
 .venv/
 __pycache__/
 *.pyc
@@ -6,3 +6,10 @@ whisper-writer/
 models/
 *.bin
 *.log
+
+# 打包產物（由 gs-app-pack 產生，不進版控）
+dist/
+build/
+*.spec
+installer.iss
+static/gs-icon.ico

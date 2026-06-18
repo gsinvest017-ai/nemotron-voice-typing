@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nemotron 語音輸入</title>
+<style>
+  :root{
+    --bg:#0f0b06; --panel:#1a1408; --line:#3a2f1a;
+    --gold:#d4af37; --champ:#e8d195; --fg:#f3ecdf; --muted:#a99a78;
+    --green:#4caf7d; --red:#d4715a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Inter,system-ui,sans-serif;
+       background:var(--bg);color:var(--fg);
+       display:flex;flex-direction:column;min-height:100vh;padding:22px;gap:16px}
+  h1{margin:0;font-size:19px;font-weight:600;
+     background:linear-gradient(90deg,var(--gold),var(--champ));
+     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .ver{color:var(--muted);font-size:12px;font-family:"JetBrains Mono",Consolas,monospace}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .statusrow{display:flex;align-items:center;gap:12px}
+  .dot{width:12px;height:12px;border-radius:50%;background:var(--red);
+       box-shadow:0 0 8px var(--red);transition:.2s}
+  .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .stxt{font-size:17px;font-weight:600}
+  .meta{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.7}
+  .meta b{color:var(--champ);font-weight:600;font-family:"JetBrains Mono",Consolas,monospace}
+  button{font-family:inherit;font-size:14px;border-radius:9px;cursor:pointer;
+         border:1px solid var(--line);padding:11px 18px;color:var(--fg);
+         background:#241b0c;transition:.15s}
+  button:hover{border-color:var(--gold)}
+  button:disabled{opacity:.5;cursor:default}
+  .toggle{width:100%;margin-top:14px;font-size:16px;font-weight:600;padding:14px;
+          background:linear-gradient(90deg,#2a2010,#1f1709);border-color:var(--gold)}
+  .toggle.on{background:linear-gradient(90deg,#3a1810,#2a1209);border-color:var(--red)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .hint{color:var(--muted);font-size:12.5px;line-height:1.8}
+  .hint kbd{background:#241b0c;border:1px solid var(--line);border-radius:5px;
+            padding:1px 6px;font-family:"JetBrains Mono",Consolas,monospace;color:var(--champ)}
+  #msg{font-size:13px;color:var(--champ);min-height:18px}
+  .warn{color:var(--red)}
+  .grow{flex:1}
+  a{color:var(--gold)}
+</style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <h1>◎ Nemotron 語音輸入</h1>
+    <span class="ver" id="ver"></span>
+  </div>
+
+  <div class="card" id="mainCard">
+    <div class="statusrow">
+      <span class="dot" id="dot"></span>
+      <span class="stxt" id="stxt">讀取中…</span>
+    </div>
+    <div class="meta" id="meta"></div>
+    <button class="toggle" id="toggle" onclick="onToggle()" disabled>—</button>
+  </div>
+
+  <div class="card" id="setupCard" style="display:none">
+    <div class="stxt warn">尚未安裝語音引擎</div>
+    <div class="hint" style="margin:8px 0 14px">
+      偵測不到 whisper-writer venv。可按下方一鍵安裝（會在背景跑 install.ps1，需數分鐘下載依賴），
+      或自行執行 repo 的 <b>install.ps1</b>。
+    </div>
+    <button onclick="onSetup()">一鍵安裝語音引擎</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="updBtn" onclick="onCheck()">檢查更新</button>
+      <span class="grow"></span>
+      <button id="applyBtn" onclick="onApply()" style="display:none">立即更新</button>
+    </div>
+    <div id="msg" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card hint">
+    用法：在任何視窗按住 <kbd id="hk">Ctrl+Shift+Space</kbd> 說話 → 放開 → 辨識文字自動打進游標處。<br>
+    VS Code vibe coding：<kbd>Ctrl+I</kbd> 開 Continue → 按住熱鍵說需求 → 放開 → Enter。<br>
+    <span style="color:var(--muted)">關閉本視窗即停止背景語音輸入。</span>
+  </div>
+
+<script>
+let st = {};
+async function api(path, method='GET'){
+  const r = await fetch(path, {method});
+  return r.json();
+}
+function render(){
+  document.getElementById('ver').textContent = 'v' + (st.version||'?');
+  const running = !!st.running;
+  document.getElementById('dot').className = 'dot' + (running?' on':'');
+  document.getElementById('stxt').textContent = running ? '語音輸入運作中' : '已停止';
+  const tg = document.getElementById('toggle');
+  tg.disabled = !st.venv_ok;
+  tg.textContent = running ? '■ 停止語音輸入' : '▶ 啟動語音輸入';
+  tg.className = 'toggle' + (running?' on':'');
+  document.getElementById('meta').innerHTML =
+    '模型 <b>'+(st.model||'—')+'</b> ・ 熱鍵 <b>'+(st.hotkey||'—')+'</b><br>'+
+    '引擎目錄 <b>'+(st.install_dir||'—')+'</b>';
+  if(st.hotkey) document.getElementById('hk').textContent = st.hotkey;
+  document.getElementById('setupCard').style.display = st.venv_ok ? 'none':'block';
+  document.getElementById('mainCard').style.display = st.venv_ok ? 'block':'none';
+}
+async function refresh(){ st = await api('/api/status'); render(); }
+async function onToggle(){
+  const tg=document.getElementById('toggle'); tg.disabled=true;
+  st = await api(st.running ? '/api/stop' : '/api/start', 'POST'); render();
+}
+async function onSetup(){
+  document.getElementById('msg').textContent = '安裝中…（背景執行，完成後重啟本程式即可）';
+  await api('/api/setup','POST');
+}
+async function onCheck(){
+  const b=document.getElementById('updBtn'); b.disabled=true;
+  document.getElementById('msg').textContent='檢查中…';
+  const r = await api('/api/update/check');
+  b.disabled=false;
+  const m=document.getElementById('msg'), ab=document.getElementById('applyBtn');
+  if(r.error){ m.innerHTML='<span class="warn">'+r.error+'</span>'; ab.style.display='none'; return; }
+  if(r.update_available){
+    m.innerHTML='有新版本 <b>v'+r.latest+'</b>（目前 v'+r.current+'）';
+    ab.style.display='inline-block';
+  } else {
+    m.textContent='已是最新版 v'+r.current; ab.style.display='none';
+  }
+}
+async function onApply(){
+  document.getElementById('msg').textContent='下載並安裝更新中…程式將自動重啟。';
+  const r = await api('/api/update/apply','POST');
+  if(r.status!=='updating') document.getElementById('msg').innerHTML='<span class="warn">'+(r.error||r.status)+'</span>';
+}
+refresh(); setInterval(refresh, 2500);
+</script>
+</body>
+</html>

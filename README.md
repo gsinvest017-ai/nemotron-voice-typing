@@ -18,7 +18,32 @@
 
 ---
 
-## 一鍵安裝
+## 桌面應用程式（安裝檔 + 自動更新）⭐
+
+除了腳本，本 repo 也提供一個 **桌面控制器 App**（`nemotron-voice-setup.exe`）：
+
+- **點兩下安裝檔 → 桌面捷徑/開始選單** 多一個「Nemotron 語音輸入」圖示（免系統管理員、per-user 安裝）
+- **點圖示開啟 → 自動在背景啟動語音輸入**；面板有運作狀態、Start/Stop 切換、模型/熱鍵資訊
+- **關閉視窗 → 背景語音輸入即停止**
+- **自動更新**：面板「檢查更新」會比對 GitHub Release，有新版一鍵下載靜默升級並自動重啟
+- 首次若偵測不到語音引擎，面板提供「一鍵安裝語音引擎」按鈕（背景跑 `install.ps1`）
+
+> 桌面 App 是**輕量控制器**（~50MB），不含 CUDA/模型；它控制由 `install.ps1` 裝在
+> `~/tools/whisper-writer` 的重環境。安裝檔在 [Releases](https://github.com/gsinvest017-ai/nemotron-voice-typing/releases) 下載。
+> repo 為 private，自動更新需 `gh auth login` 或設定 `NVT_GH_TOKEN`。
+
+### 自己打包桌面 App
+用通用打包器 [gs-app-pack](https://github.com/gsinvest017-ai)（PyInstaller + Inno Setup）：
+```powershell
+pip install pyinstaller pywebview        # 一次性
+C:\Users\User\gs-app-pack\pack.ps1 -Clean              # 建 exe + 安裝檔
+C:\Users\User\gs-app-pack\pack.ps1 -Tag v1.0.1 -Clean  # + 發 GitHub Release
+```
+控制器原始碼在 `app.py` + `vtcontrol/`（`manager` 管子程序、`server` stdlib 控制 API、`updater` 自我更新）、UI 在 `static/control.html`、打包設定在 `pack.config.ps1`。
+
+---
+
+## 一鍵安裝（純腳本，不需桌面 App）
 
 ```powershell
 git clone https://github.com/gsinvest017-ai/nemotron-voice-typing
