@@ -216,7 +216,10 @@ try {{
   L "ERROR $_"
 }}
 """
-    script.write_text(body, encoding="utf-8")
+    # 用 utf-8-sig（帶 BOM）寫入！detached updater 用 Windows PowerShell 5.1 執行，
+    # 無 BOM 的 .ps1 會被當 cp950 解讀，含中文的安裝路徑（如「Nemotron 語音輸入」）
+    # 會變亂碼導致 relaunch「系統找不到指定的檔案」。BOM 讓 PS 5.1 / 7 都正確讀 UTF-8。
+    script.write_text(body, encoding="utf-8-sig")
 
 
 def apply_update(asset_name: Optional[str] = None) -> dict:

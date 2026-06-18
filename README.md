@@ -113,6 +113,7 @@ ctranslate2 在 Windows **不會**自動搜尋 pip 裝的 `site-packages\nvidia\
 | 3 cp950 編碼 | 啟動 `UnicodeDecodeError` | utils.py 的 open() 加 `encoding="utf-8"` |
 | 4 缺 cublas DLL | 能用但每句 ~6s（偷偷用 CPU） | sitecustomize.py 加 `os.add_dll_directory` |
 | 5 Ctrl+C 關不掉 | PyQt 事件迴圈吃掉 SIGINT | main.py 裝 SIGINT handler + no-op QTimer |
+| 6 自動更新 relaunch 失敗 | 升級後不會自動重啟（中文安裝路徑） | updater 的 .ps1 用 `utf-8-sig`（BOM）寫，PS 5.1 才不會 cp950 亂碼 |
 
 > 坑5 補充：whisper-writer 是 PyQt GUI，`app.exec_()` 會阻塞 Python 的 SIGINT 處理，
 > 終端機 Ctrl+C 因此無效；存設定後的 `restart_app` 又用 `QProcess.startDetached` 把程序

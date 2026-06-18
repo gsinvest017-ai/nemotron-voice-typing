@@ -5,7 +5,7 @@
 
 # ── App metadata ─────────────────────────────────────────────────────────────
 $AppName      = "Nemotron 語音輸入"
-$AppVersion   = "1.0.1"
+$AppVersion   = "1.0.2"
 $AppId        = "7E3A9C42-1B5D-4F6A-9C21-3D8E2F0A6B74"
 $AppExe       = "nemotron-voice"            # 輸出 exe 名（不含 .exe）
 $AppPublisher = "gsinvest"
