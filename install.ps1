@@ -134,8 +134,10 @@ if ($m -notmatch 'SIGINT') {
     $m = $m -replace "(?m)^import os\r?\nimport sys", "import os`r`nimport signal`r`nimport sys"
     $m = $m -replace 'from PyQt5\.QtCore import QObject, QProcess', 'from PyQt5.QtCore import QObject, QProcess, QTimer'
     $anchor = 'self.app.setWindowIcon(QIcon(os.path.join("assets", "ww-logo.png")))'
+    # 用 exit_app() 而不是 app.quit()：exit_app 會先跑 cleanup（停 key_listener、
+    # 收 input_simulator），直接 quit 會把全域熱鍵監聽留在系統裡。
     $inject = $anchor + "`r`n            # Qt 事件迴圈會吃掉 SIGINT，no-op QTimer 定時把控制權還給直譯器，讓 Ctrl+C 能關閉" +
-              "`r`n            signal.signal(signal.SIGINT, lambda *_: self.app.quit())" +
+              "`r`n            signal.signal(signal.SIGINT, lambda *_: self.exit_app())" +
               "`r`n            self._sigint_timer = QTimer()" +
               "`r`n            self._sigint_timer.start(250)" +
               "`r`n            self._sigint_timer.timeout.connect(lambda: None)"
@@ -144,6 +146,41 @@ if ($m -notmatch 'SIGINT') {
     Ok "main.py 已 patch Ctrl+C"
 } else {
     Ok "main.py 已含 SIGINT handler，略過"
+}
+
+# 5c 與 5b 分開判斷：舊版安裝過的機器已經有 SIGINT，會走上面的 else 而跳過，
+# 但沒有下面這段保護——所以獨立做一次 idempotent 檢查。
+Step "5c. 修坑5b：cleanup() 加 getattr 保護（SIGINT 在元件初始化前觸發不再 AttributeError）"
+$m = Get-Content $main -Raw -Encoding utf8
+if ($m -notmatch 'getattr\(self, "key_listener"') {
+    $old = @'
+        def cleanup(self):
+            if self.key_listener:
+                self.key_listener.stop()
+            if self.input_simulator:
+                self.input_simulator.cleanup()
+'@ -replace "`r`n", "`n"
+    $new = @'
+        def cleanup(self):
+            # 用 getattr 保護：SIGINT 可能在 initialize_components 之前就觸發
+            # （例如設定視窗開著、還沒建立 key_listener / input_simulator）。
+            kl = getattr(self, "key_listener", None)
+            if kl:
+                kl.stop()
+            isim = getattr(self, "input_simulator", None)
+            if isim:
+                isim.cleanup()
+'@ -replace "`r`n", "`n"
+    $norm = $m -replace "`r`n", "`n"
+    if ($norm -match [regex]::Escape($old)) {
+        $norm = $norm -replace [regex]::Escape($old), $new
+        Set-Content $main ($norm -replace "`n", "`r`n") -Encoding utf8 -NoNewline
+        Ok "main.py cleanup() 已加 getattr 保護"
+    } else {
+        Warn "找不到預期的 cleanup() 區塊（上游可能改版），略過此 patch"
+    }
+} else {
+    Ok "main.py cleanup() 已有 getattr 保護，略過"
 }
 
 # ---------------------------------------------------------------------------
