@@ -85,7 +85,7 @@ pwsh -File install.ps1 -Hotkey "ctrl+alt+space"        # 自訂熱鍵
 ```
 - 任何視窗按住 **Ctrl+Shift+Space** 說話 → 放開 → 辨識文字自動打進游標處
 - VS Code vibe coding：`Ctrl+I` 開 Continue → 按住熱鍵說「幫我寫一個 Python 快排，加註解」→ 放開 → Enter
-- 停止：`stop-voice.ps1`　測麥克風：`test-mic.ps1`
+- 停止：`stop-voice.ps1`　測麥克風：`test-mic.ps1`　量速度：`scripts/bench.py`（在 whisper-writer 的 venv 下跑，比較 large-v3 / large-v3-turbo × beam 5/1 的每句耗時，用來決定 `-WhisperModel`）
 
 ---
 
@@ -124,6 +124,14 @@ ctranslate2 在 Windows **不會**自動搜尋 pip 裝的 `site-packages\nvidia\
 > 脫離 console group，更收不到訊號。`install.ps1` 會自動 patch main.py 裝 SIGINT handler
 > 並跑一個 no-op QTimer 定時把控制權交還直譯器。**最省事的停止方式**：用 `stop-voice.ps1`，
 > 或直接用桌面 App（關窗即停）。
+>
+> 坑5 還有兩個後續（實際用出來的，2026-08-04 回填進 `install.ps1`）：
+> **(a)** SIGINT handler 要呼叫 `exit_app()` 而不是 `app.quit()`——後者會跳過 `cleanup()`，
+> 把全域熱鍵監聽（`key_listener`）留在系統裡沒收乾淨。
+> **(b)** `cleanup()` 要用 `getattr` 取 `key_listener` / `input_simulator`：SIGINT 可能在
+> `initialize_components` 跑完之前就觸發（例如設定視窗還開著），直接存取會 `AttributeError`，
+> 變成 Ctrl+C 反而炸掉而不是關閉。這段在 `install.ps1` 是**獨立的 Step 5c**，
+> 因為舊機器已經有 SIGINT handler、會跳過 5b，得單獨判斷才補得到。
 
 ---
 
